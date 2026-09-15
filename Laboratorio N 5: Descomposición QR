@@ -1,0 +1,20 @@
+'''
+QR = La factorización QR se compone de una matriz ortogonal Q tal que Q^t.Q = I , la matriz identidad y R es una matriz triangular
+superior. De esta forma, obtenemos una forma de calcular la solución del problema Ax = b como Rx = Q^t.b
+El desafío entonces es encontrar la matriz Q tal que Q^t.A = R
+Ax = b -> LUx = b ==>(tomo y=Ux ) Ly = b --> Ux = y
+
+A = [[2,3,1],[0,4,1],[0,0,1]]
+Q*.Q = Id --> Q son las columnas de la matriz
+Q* = Q^-1
+
+Q^(int1) = [[1,*,*],[0,*,*],[0,*,*]]
+
+Q1 = a1/||a1|| = [2,0,0] / 2 = (1,0,0)
+a2.q1 = 3 = 3.1 + 4.0 + 0.0
+
+a1 = (2,0,0) , a2 = (3,4,0), a3 = (1,1,1)
+
+a2.q1 = ||a2||.||q1||.cos(alpha)
+
+'''
