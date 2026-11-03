@@ -44,6 +44,48 @@ def svd(A, tol=1e-15, Kiter=1e5):
         if sig[k] > tol:
             U[:, k] = B[:, k] / sig[k]
     return U, sig, Vo
+
+################vs LEGALMENTE APRUEBA DE BALAS HDPPPSSS
+def svd(A, tol=1e-15, Kiter=1e5):
+    m, n = A.shape
+    S = productoMatricial(traspuesta(A), A, 0.0)
+    V, D = diagRHSVD(S, tol, Kiter)
+
+    # Ordenar índices según los autovalores, de mayor a menor
+    orden = np.arange(n)
+
+    for i in range(n):
+        mayor = i
+
+        for j in range(i + 1, n):
+            if D[orden[j], orden[j]] > D[orden[mayor], orden[mayor]]:
+                mayor = j
+
+        aux = orden[i]
+        orden[i] = orden[mayor]
+        orden[mayor] = aux
+
+    sig = np.zeros(n)
+    Vo = np.zeros((n, n))
+
+    for k in range(n):
+        i = orden[k]
+        lam = D[i, i]
+
+        if lam < 0:
+            lam = 0.0
+
+        sig[k] = np.sqrt(lam)
+        Vo[:, k] = V[:, i]
+
+    B = productoMatricial(A, Vo, 0.0)
+    U = np.zeros((m, n))
+
+    for k in range(n):
+        if sig[k] > tol:
+            U[:, k] = B[:, k] / sig[k]
+
+    return U, sig, Vo
     
     
     
