@@ -136,3 +136,22 @@ svd_reducida devuelve 8 valores singulares de 9 (Q de 4 puntos y de 77), y 5 de 
 nucleo da vacío con los 77 puntos exactos y con la matriz aleatoria, porque exige un autovalor menor a 10⁻¹⁵, y con datos reales (con ruido) nunca lo hay.
 
 Ambas fueron pensadas para aproximaciones de rango bajo, no para el vector de menor valor singular. Por lo que dice el código, la diagRHSVD de modulo_2025.py también recorta los autovalores menores a tol, así que no la probé con el solver corregido, pero no esperaría que funcione para datos exactos. Para el solver corregido hace falta la diagRHSVD que devuelve todos los autovalores (la que pegaste, modificada por Nati).
+
+
+
+#################################################################################
+
+#EJ4 
+
+NECESITO H Y H^-1  
+
+Sea H^-1 = inversa(H) que es el paso para pasar de sist_pixel (x,y,1) --> sist_cancha  (U,V)  
+
+INCISO A)  1. tengo la foto y tengo que descomponerla en un sistema pixeles = subo la foto y con algo de magia hacer un txt con todos los pixeñles de la imgen ---> llama a ese txt_gol_pixel
+1.2 tengo un array con todos los pixeles y con una app aparte busco el pixel de enzo ( dps puedo hacer eso para los otros jugadores)
+2. pero estimarHomografia tomo una lista de homografias, entonces tengo que armara un txt de la imagen de gol_enzo = imgPts
+y tambien necesito d
+. inversa(estimarHomografia(Hist)) y la normalizo para llegar a coordenadfas cartesianas
+
+
+
