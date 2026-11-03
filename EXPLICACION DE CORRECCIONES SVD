@@ -1,0 +1,96 @@
+Los tests de 3a, 3b y 3c pasan; resolverSistemaHomogeneo y svd fallan. Antes de decírtelo, pruebo si las correcciones que propongo los arreglan.
+
+
+
+Por qué falla tu svd
+
+Reproduje tres problemas:
+
+Matrices con menos filas que columnas (Q de 4 puntos, 8×9). Devuelve 8 valores singulares y 8 vectores, y el vector del núcleo (el noveno) no está. El solver acertó 0 de 10 corridas.
+
+nan con datos exactos. Con datos sin ruido, el menor autovalor de QᵀQ es ~10⁻¹² y a veces sale negativo por redondeo. np.sqrt da nan, y la comparación con nan es falsa. Con 77 puntos exactos el solver acertó 7 de 10 corridas, porque metpot arranca con un vector aleatorio. Con datos reales (con ruido) no pasa, porque el menor autovalor es claramente positivo.
+
+Precisión limitada por tol. Con tol=1e-7, los valores singulares coinciden con los de NumPy hasta ~10⁻⁶. Si tu compañera compara con tolerancia 10⁻¹², va a ver “diferencias” que son esperables. Los tests usan 10⁻⁵ relativo.
+
+
+
+
+
+def resolverSistemaHomogeneo(A, tol=1e-15, Kiter=1e5):
+    S = productoMatricial(traspuesta(A), A, 0.0)     # (n x n) simétrica
+    P, D = diagRHSVD(S, tol, Kiter)
+    indice = 0
+    for i in range(1, S.shape[0]):
+        if D[i, i] < D[indice, indice]:
+            indice = i
+    return P[:, indice]
+
+def svd(A, tol=1e-15, Kiter=1e5):
+    m, n = A.shape
+    S = productoMatricial(traspuesta(A), A, 0.0)
+    V, D = diagRHSVD(S, tol, Kiter)
+    orden = sorted(range(n), key=lambda i: -D[i, i])     # de mayor a menor
+    sig = np.zeros(n)
+    Vo = np.zeros((n, n))
+    for k, i in enumerate(orden):
+        lam = D[i, i]
+        if lam < 0:                  # redondeo: evita sqrt de un negativo
+            lam = 0.0
+        sig[k] = np.sqrt(lam)
+        Vo[:, k] = V[:, i]
+    B = productoMatricial(A, Vo, 0.0)
+    U = np.zeros((m, n))
+    for k in range(n):
+        if sig[k] > tol:
+            U[:, k] = B[:, k] / sig[k]
+    return U, sig, Vo
+    
+    
+    
+Dos cambios importantes:
+
+Siempre se diagonaliza AᵀA, que es n×n, sea cual sea la forma de A.
+El 0.0 en productoMatricial evita que se pongan en cero productos chicos (el problema de atol que vimos con las columnas de A).
+
+
+Con m < n, esta svd devuelve n valores singulares (el último ~0) en lugar de m, que es lo que hace falta para tener el vector del núcleo. Por eso el test acepta que haya más valores siempre que los sobrantes sean ≈ 0.
+
+
+Dos advertencias
+Para correr tus funciones en mi entorno completé los auxiliares que faltaban en lo que pegaste (Ax, vTA, f_A, uuT, vwT, check_tol, res_tri) con implementaciones mías. Si los de tu grupo hacen algo distinto, algún resultado puede variar. Corré los tests en tu notebook para confirmarlo.
+El archivo usa @ y np.linalg, que no están permitidos en la entrega. Es solo para verificar: no lo importes desde la notebook final.
+
+
+
+##########################################
+CAMBIOS HECHOS USANDO EL MODULO DE GITHUB
+
+
+Sí, los errores vuelven a aparecer en el solver y en svd. Tus incisos 3a, 3b y 3c siguen pasando todo. Y salieron dos cosas nuevas que no se veían con mis auxiliares de reemplazo.
+modulo_2025.py tiene los auxiliares que faltaban (Ax, vTA, f_A, uuT, vwT, check_tol, res_tri), pero no tiene las funciones que pegaste antes: su diagRHSVD es otra versión (con parámetro cant_autovals y recorta los autovalores menores a tol), y no tiene svd ni resolverSistemaHomogeneo. Entonces probé la combinación que se parece a tu alc.py: los auxiliares del módulo más tus svd, resolverSistemaHomogeneo, metpot y diagRHSVD (la que devuelve todos los autovalores), tal como las pegaste.
+
+
+Con las versiones corregidas del mensaje anterior (diagonalizar siempre AᵀA, sin sqrt de negativos, 0.0 en el producto), pasa todo, incluida la exigencia de ‖x‖ = 1.
+
+
+
+Dos cosas nuevas
+
+1. La tolerancia no es la misma para Q que para A.
+Con tu módulo, f_A devuelve un vector cero cuando ‖Av‖ < tol, y diagRHSVD descarta los autovalores menores que tol. Para Q (bien escalada) tol=1e-7 está bien. Para A los autovalores de AᵀA bajan hasta ~10⁻¹⁴, así que con tol=1e-7 se pierde justo el que necesitamos:
+
+Con A de las 10 fotos reales y tol=1e-7, calcularMatrizK2D falla en las 4 corridas (calculaCholesky devuelve None) tanto con tu solver como con el corregido.
+Con el tol por defecto (1e-15), que es como la llamás vos (resolverSistemaHomogeneo(A)), da K ≈ [743.55, 743.57, 743.86, 743.54] para fx, contra 743.58 de la referencia NumPy. Coincide, aunque hay una variación de hasta ~0.3 entre corridas por el arranque aleatorio de metpot.
+
+Regla: tol=1e-7 para Q, el valor por defecto para A.
+
+2. Una corrección a mi propio test. La versión anterior solo miraba ‖M·x‖, y un vector nulo daría 0 y pasaría falsamente. Ahora exige ‖x‖ = 1 y llama a cada caso con su tolerancia. Todos los resultados de arriba son con el test corregido. Te pasé el archivo actualizado (misma firma: correr_tests(...), sin cambios en cómo se llama).
+
+No uses las rutinas de modulo_2025.py para esto
+
+Probé svd_reducida y nucleo sobre las mismas matrices:
+
+svd_reducida devuelve 8 valores singulares de 9 (Q de 4 puntos y de 77), y 5 de 6 (A). Descarta justo la dirección del núcleo, que es la que buscamos.
+nucleo da vacío con los 77 puntos exactos y con la matriz aleatoria, porque exige un autovalor menor a 10⁻¹⁵, y con datos reales (con ruido) nunca lo hay.
+
+Ambas fueron pensadas para aproximaciones de rango bajo, no para el vector de menor valor singular. Por lo que dice el código, la diagRHSVD de modulo_2025.py también recorta los autovalores menores a tol, así que no la probé con el solver corregido, pero no esperaría que funcione para datos exactos. Para el solver corregido hace falta la diagRHSVD que devuelve todos los autovalores (la que pegaste, modificada por Nati).
